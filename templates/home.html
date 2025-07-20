@@ -1,0 +1,715 @@
+{% extends "base.html" %} {% block title %}Dashboard - Attend-AI{% endblock %}
+{% block content %}
+<!-- Custom CSS for Dashboard -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/dashboard.css') }}"
+/>
+
+<!-- Professional Header -->
+<nav class="navbar navbar-expand-lg fixed-top">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <i class="fas fa-user-check me-2"></i>Attend-AI
+    </a>
+
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item">
+          <a class="nav-link active" href="/dashboard">Dashboard</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/">
+            <i class="fas fa-home me-1"></i>Home
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-4" style="padding-top: 100px !important">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header fade-in">
+    <div class="d-flex justify-content-between align-items-start flex-wrap">
+      <div>
+        <h1 class="dashboard-title">
+          <i class="fas fa-brain me-3"></i>Attend-AI Dashboard
+        </h1>
+        <p class="dashboard-subtitle">
+          Real-time face recognition attendance management system
+        </p>
+        <div class="dashboard-stats">
+          <div class="stat-item">
+            <i class="fas fa-users stat-icon"></i>
+            <span class="stat-text"
+              >Total Users:
+              <span class="stat-number">{{ totalreg }}</span></span
+            >
+          </div>
+          <div class="stat-item">
+            <i class="fas fa-calendar-check stat-icon"></i>
+            <span class="stat-text"
+              >Today: <span class="stat-number">{{ datetoday2 }}</span></span
+            >
+          </div>
+          <div class="stat-item">
+            <i class="fas fa-clock stat-icon"></i>
+            <span class="stat-text"
+              >Records: <span class="stat-number">{{ l }}</span></span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Messages -->
+  {% if mess %}
+  <div class="dashboard-alert error slide-up">
+    <i class="fas fa-exclamation-triangle alert-icon"></i>
+    <span>{{ mess }}</span>
+  </div>
+  {% endif %}
+
+  <!-- Main Dashboard Content -->
+  <div class="row g-4">
+    <!-- Attendance Management Card -->
+    <div class="col-lg-8">
+      <div class="modern-card slide-up">
+        <div class="card-header-modern attendance">
+          <h4 class="card-title-modern">
+            <i class="fas fa-user-check card-icon-modern"></i>
+            Today's Attendance
+          </h4>
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-calendar-alt card-icon-modern"></i>
+            <span>{{ datetoday2 }}</span>
+          </div>
+        </div>
+        <div class="card-body-modern">
+          <!-- Take Attendance Button -->
+          <a href="/start" class="cta-button-modern">
+            <i class="fas fa-camera button-icon"></i>
+            <span>Start Face Recognition</span>
+            <i class="fas fa-arrow-right button-icon"></i>
+          </a>
+
+          <!-- Attendance Table -->
+          {% if l > 0 %}
+          <div class="table-container-modern">
+            <table class="table table-modern">
+              <thead>
+                <tr>
+                  <th><i class="fas fa-hashtag me-2"></i>No.</th>
+                  <th><i class="fas fa-user me-2"></i>Name</th>
+                  <th><i class="fas fa-id-card me-2"></i>ID</th>
+                  <th><i class="fas fa-clock me-2"></i>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for i in range(l) %}
+                <tr>
+                  <td>
+                    <span class="table-index">{{ i+1 }}</span>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="fas fa-user-circle text-primary"></i>
+                      <strong>{{ names[i] }}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">{{ rolls[i] }}</span>
+                  </td>
+                  <td>
+                    <span class="table-time">
+                      <i class="fas fa-clock me-1"></i>{{ times[i] }}
+                    </span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="stats-footer">
+            <span
+              ><i class="fas fa-check-circle text-success me-1"></i>Total
+              Present Today</span
+            >
+            <span class="stats-number"
+              >{{ l }} Student{{ 's' if l != 1 else '' }}</span
+            >
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-user-clock empty-icon"></i>
+            <h5 class="empty-title">No Attendance Records</h5>
+            <p class="empty-description">
+              Click "Start Face Recognition" to begin taking attendance for
+              today.
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- User Management Card -->
+    <div class="col-lg-4">
+      <div class="modern-card slide-up">
+        <div class="card-header-modern users">
+          <h4 class="card-title-modern">
+            <i class="fas fa-user-plus card-icon-modern"></i>
+            Add New User
+          </h4>
+          <i class="fas fa-users-cog card-icon-modern"></i>
+        </div>
+        <div class="card-body-modern">
+          <form
+            action="/add"
+            method="POST"
+            enctype="multipart/form-data"
+            class="form-modern needs-validation"
+            novalidate
+          >
+            <div class="form-group-modern">
+              <label for="newusername" class="form-label-modern">
+                <i class="fas fa-user me-2"></i>Full Name *
+              </label>
+              <input
+                type="text"
+                class="form-input-modern"
+                id="newusername"
+                name="newusername"
+                placeholder="Enter student/employee name"
+                required
+                autocomplete="name"
+              />
+              <div class="form-feedback invalid">
+                <i class="fas fa-exclamation-circle"></i>
+                Please enter a valid name
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label for="newuserid" class="form-label-modern">
+                <i class="fas fa-id-card me-2"></i>User ID *
+              </label>
+              <input
+                type="number"
+                class="form-input-modern"
+                id="newuserid"
+                name="newuserid"
+                placeholder="Enter unique ID number"
+                required
+                min="1"
+              />
+              <div class="form-feedback invalid">
+                <i class="fas fa-exclamation-circle"></i>
+                Please enter a valid ID number
+              </div>
+            </div>
+
+            <button type="submit" class="cta-button-modern success">
+              <i class="fas fa-camera button-icon"></i>
+              <span>Capture Face & Add</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Features Row -->
+  <div class="row g-4 mt-2">
+    <!-- Export Data Card -->
+    <div class="col-md-8 offset-md-2">
+      <div class="modern-card slide-up">
+        <div class="card-body-modern text-center">
+          <i class="fas fa-download fa-2x text-success mb-3"></i>
+          <h5>Export Attendance Data</h5>
+          <p class="text-muted">
+            Download today's attendance records in your preferred format
+          </p>
+          <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a
+              href="/simple-excel"
+              class="btn btn-outline-success"
+              target="_blank"
+            >
+              <i class="fas fa-file-excel me-1"></i>Export Excel
+            </a>
+            <a
+              href="/simple-pdf"
+              class="btn btn-outline-danger"
+              target="_blank"
+            >
+              <i class="fas fa-file-pdf me-1"></i>Export PDF
+            </a>
+            <a
+              href="/simple-csv"
+              class="btn btn-outline-primary"
+              target="_blank"
+            >
+              <i class="fas fa-file-csv me-1"></i>Export CSV
+            </a>
+          </div>
+          <small class="text-muted mt-2 d-block">
+            Files will be downloaded with today's date: {{ datetoday2 }}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced JavaScript for Form Validation and Interactions -->
+<script>
+  // Enhanced Bootstrap validation with better UX
+  (function () {
+    "use strict";
+
+    // Form validation
+    var forms = document.querySelectorAll(".needs-validation");
+    Array.prototype.slice.call(forms).forEach(function (form) {
+      form.addEventListener(
+        "submit",
+        function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Show first invalid field
+            const firstInvalid = form.querySelector(":invalid");
+            if (firstInvalid) {
+              firstInvalid.focus();
+              firstInvalid.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+            }
+          } else {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+              submitBtn.innerHTML =
+                '<div class="loading-spinner me-2"></div>Processing...';
+              submitBtn.disabled = true;
+            }
+          }
+          form.classList.add("was-validated");
+        },
+        false
+      );
+    });
+
+    // Real-time validation feedback
+    document.querySelectorAll(".form-input-modern").forEach((input) => {
+      input.addEventListener("input", function () {
+        if (this.checkValidity()) {
+          this.classList.remove("is-invalid");
+          this.classList.add("is-valid");
+        } else {
+          this.classList.remove("is-valid");
+          this.classList.add("is-invalid");
+        }
+      });
+    });
+
+    // Animate elements on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px",
+    };
+
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = "1";
+          entry.target.style.transform = "translateY(0)";
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll(".slide-up").forEach((el) => {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(30px)";
+      el.style.transition = "all 0.6s ease";
+      observer.observe(el);
+    });
+
+    // Auto-refresh attendance data every 30 seconds
+    let refreshInterval;
+    function startAutoRefresh() {
+      refreshInterval = setInterval(() => {
+        const attendanceTable = document.querySelector(".table-modern tbody");
+        if (attendanceTable) {
+          // Add a subtle loading indicator
+          attendanceTable.style.opacity = "0.7";
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
+      }, 30000); // 30 seconds
+    }
+
+    // Start auto-refresh if on attendance tab
+    if (document.querySelector(".table-modern")) {
+      startAutoRefresh();
+    }
+
+    // Stop auto-refresh when user is interacting with forms
+    document.querySelectorAll("input, button").forEach((element) => {
+      element.addEventListener("focus", () => {
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+        }
+      });
+    });
+  })();
+
+  // Add smooth transitions for better UX
+  document.addEventListener("DOMContentLoaded", function () {
+    // Stagger animation for table rows
+    const tableRows = document.querySelectorAll(".table-modern tbody tr");
+    tableRows.forEach((row, index) => {
+      row.style.animationDelay = `${index * 0.1}s`;
+      row.classList.add("fade-in");
+    });
+
+    // Add loading states for buttons
+    document.querySelectorAll(".cta-button-modern").forEach((button) => {
+      button.addEventListener("click", function (e) {
+        if (this.href && this.href.includes("/start")) {
+          this.innerHTML =
+            '<div class="loading-spinner me-2"></div>Starting Camera...';
+        }
+      });
+    });
+  });
+
+  // Navbar scroll effect
+  window.addEventListener("scroll", function () {
+    const navbar = document.querySelector(".navbar");
+    if (window.scrollY > 50) {
+      navbar.classList.add("scrolled");
+    } else {
+      navbar.classList.remove("scrolled");
+    }
+  });
+
+  // Active navigation link highlighting
+  const navLinks = document.querySelectorAll(".navbar-nav .nav-link");
+  const currentPath = window.location.pathname;
+
+  navLinks.forEach((link) => {
+    link.classList.remove("active");
+    const href = link.getAttribute("href");
+    if (
+      href === currentPath ||
+      (currentPath === "/dashboard" && href === "/dashboard")
+    ) {
+      link.classList.add("active");
+    }
+  });
+</script>
+
+<style>
+  /* Additional responsive improvements */
+  @media (max-width: 768px) {
+    .dashboard-stats {
+      justify-content: center;
+    }
+
+    .stats-footer {
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+  }
+
+  /* Custom scrollbar for tables */
+  .table-container-modern::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .table-container-modern::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+  }
+
+  .table-container-modern::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  .table-container-modern::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Header Styles */
+  .navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    transition: all 0.3s ease;
+  }
+
+  .navbar-brand {
+    font-family: "Poppins", sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #2563eb !important;
+    text-decoration: none;
+  }
+
+  .navbar-brand:hover {
+    color: #10b981 !important;
+  }
+
+  .navbar-nav .nav-link {
+    font-weight: 500;
+    color: #1f2937 !important;
+    margin: 0 0.5rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+  }
+
+  .navbar-nav .nav-link:hover {
+    background: #f8fafc;
+    color: #2563eb !important;
+  }
+
+  .navbar-nav .nav-link.active {
+    background: #2563eb;
+    color: white !important;
+  }
+
+  .navbar.scrolled {
+    background: rgba(255, 255, 255, 0.98);
+    padding: 0.5rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .navbar-brand {
+      font-size: 1.3rem;
+    }
+  }
+</style>
+{% endblock %}
+<html lang="en">
+  <style type="text/css">
+    * {
+      padding: 0;
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-image: url("https://cutewallpaper.org/21/1920-x-1080-gif/1920x1080-Wallpapercartoon-Wallpapers-Driverlayer-Search-.gif");
+      background-size: cover;
+      font-family: sans-serif;
+      margin-top: 40px;
+      height: 100vh;
+      padding: 0;
+      margin: 0;
+    }
+
+    table {
+      border: 1px;
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 86%;
+      margin: auto;
+    }
+
+    td,
+    th {
+      border: 1px solid black !important;
+      padding: 5px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #dddddd;
+    }
+  </style>
+
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+      crossorigin="anonymous"
+    />
+
+    <title>Face Recognition Based Attendance System</title>
+  </head>
+
+  <body>
+    <div class="mt-3 text-center">
+      <h1
+        style="
+          width: auto;
+          margin: auto;
+          color: white;
+          padding: 11px;
+          font-size: 44px;
+        "
+      >
+        Face Recognition Based Attendance System
+      </h1>
+    </div>
+
+    {% if mess%}
+    <p class="text-center" style="color: red; font-size: 20px">{{ mess }}</p>
+    {% endif %}
+
+    <div class="row text-center" style="padding: 20px; margin: 20px">
+      <div
+        class="col"
+        style="
+          border-radius: 20px;
+          padding: 0px;
+          background-color: rgb(211, 211, 211, 0.5);
+          margin: 0px 10px 10px 10px;
+          min-height: 400px;
+        "
+      >
+        <h2
+          style="
+            border-radius: 20px 20px 0px 0px;
+            background-color: #0b4c61;
+            color: white;
+            padding: 10px;
+          "
+        >
+          Today's Attendance <i class="material-icons">assignment</i>
+        </h2>
+        <a style="text-decoration: none; max-width: 300px" href="/start">
+          <button
+            style="
+              font-size: 24px;
+              font-weight: bold;
+              border-radius: 10px;
+              width: 490px;
+              padding: 10px;
+              margin-top: 30px;
+              margin-bottom: 30px;
+            "
+            type="submit"
+            class="btn btn-primary"
+          >
+            Take Attendance <i class="material-icons">beenhere</i>
+          </button>
+        </a>
+        <table style="background-color: white">
+          <tr>
+            <td><b>S No</b></td>
+            <td><b>Name</b></td>
+            <td><b>ID</b></td>
+            <td><b>Time</b></td>
+          </tr>
+          {% if l %} {% for i in range(l) %}
+          <tr>
+            <td>{{ i+1 }}</td>
+            <td>{{ names[i] }}</td>
+            <td>{{ rolls[i] }}</td>
+            <td>{{ times[i] }}</td>
+          </tr>
+          {% endfor %} {% endif %}
+        </table>
+      </div>
+
+      <div
+        class="col"
+        style="
+          border-radius: 20px;
+          padding: 0px;
+          background-color: rgb(211, 211, 211, 0.5);
+          margin: 0px 10px 10px 10px;
+          height: 400px;
+        "
+      >
+        <form action="/add" method="POST" enctype="multipart/form-data">
+          <h2
+            style="
+              border-radius: 20px 20px 0px 0px;
+              background-color: #0b4c61;
+              color: white;
+              padding: 10px;
+            "
+          >
+            Add New User <i class="material-icons">control_point_duplicate</i>
+          </h2>
+          <label style="font-size: 20px"><b>Enter New User Name*</b></label>
+          <br />
+          <input
+            type="text"
+            id="newusername"
+            name="newusername"
+            style="font-size: 20px; margin-top: 10px; margin-bottom: 10px"
+            required
+          />
+          <br />
+          <label style="font-size: 20px"><b>Enter New User Id*</b></label>
+          <br />
+          <input
+            type="number"
+            id="newusereid"
+            name="newuserid"
+            style="font-size: 20px; margin-top: 10px; margin-bottom: 10px"
+            required
+          />
+          <br />
+          <button
+            style="width: 232px; margin-top: 20px; font-size: 20px"
+            type="submit"
+            class="btn btn-dark"
+          >
+            Add New User
+          </button>
+          <br />
+          <h5 style="padding: 25px">
+            <i>Total Users in Database: {{totalreg}}</i>
+          </h5>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

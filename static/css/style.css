@@ -1,0 +1,17 @@
+/* Custom tweaks for Face Attendance UI */
+body {
+    background-color: #f8fafc; /* light gray */
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.card-header h4 {
+    font-size: 1.25rem;
+}
+
+/* Override Material Icons vertical alignment inside buttons */
+.material-icons.align-middle {
+    vertical-align: -6px;
+}
