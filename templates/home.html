@@ -841,112 +841,151 @@
       let capturedPhotos = [];
       let photoCount = 0;
 
+      // Wait for DOM to be fully loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, setting up event listeners');
+        
+        // Check if elements exist
+        const startCameraBtn = document.getElementById("startCameraBtn");
+        const startAddUserCameraBtn = document.getElementById("startAddUserCameraBtn");
+        
+        console.log('startCameraBtn found:', startCameraBtn);
+        console.log('startAddUserCameraBtn found:', startAddUserCameraBtn);
+        
+        if (startCameraBtn) {
+          console.log('Adding click listener to startCameraBtn');
+          startCameraBtn.addEventListener("click", async function () {
+            console.log('Start camera button clicked!');
+            await startCameraFunction();
+          });
+        } else {
+          console.error('startCameraBtn not found!');
+        }
+        
+        if (startAddUserCameraBtn) {
+          console.log('Adding click listener to startAddUserCameraBtn');
+          startAddUserCameraBtn.addEventListener("click", async function () {
+            console.log('Start add user camera button clicked!');
+            await startAddUserCameraFunction();
+          });
+        } else {
+          console.error('startAddUserCameraBtn not found!');
+        }
+        
+        // Add other event listeners
+        setupOtherEventListeners();
+      });
+
       // Face Recognition Camera Functions
-      document
-        .getElementById("startCameraBtn")
-        .addEventListener("click", async function () {
-          try {
-            currentStream = await navigator.mediaDevices.getUserMedia({
-              video: { width: 400, height: 300 },
-            });
-            const video = document.getElementById("cameraFeed");
-            video.srcObject = currentStream;
+      async function startCameraFunction() {
+        try {
+          console.log('Requesting camera access...');
+          currentStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 400, height: 300 },
+          });
+          const video = document.getElementById("cameraFeed");
+          video.srcObject = currentStream;
 
-            document.getElementById("cameraContainer").style.display = "block";
-            this.style.display = "none";
+          document.getElementById("cameraContainer").style.display = "block";
+          document.getElementById("startCameraBtn").style.display = "none";
 
-            showResult(
-              "attendanceResult",
-              'Camera started! Position your face in the frame and click "Take Attendance".',
-              "success"
-            );
-          } catch (error) {
-            console.error("Error accessing camera:", error);
-            showResult(
-              "attendanceResult",
-              "Error accessing camera. Please ensure you have granted camera permissions and are using HTTPS.",
-              "error"
-            );
-          }
-        });
+          showResult(
+            "attendanceResult",
+            'Camera started! Position your face in the frame and click "Take Attendance".',
+            "success"
+          );
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          showResult(
+            "attendanceResult",
+            "Error accessing camera. Please ensure you have granted camera permissions and are using HTTPS.",
+            "error"
+          );
+        }
+      }
 
-      document
-        .getElementById("captureBtn")
-        .addEventListener("click", function () {
-          captureAndProcessImage("attendance");
-        });
+      async function startAddUserCameraFunction() {
+        const username = document.getElementById("newusername").value;
+        const userid = document.getElementById("newuserid").value;
 
-      document
-        .getElementById("stopCameraBtn")
-        .addEventListener("click", function () {
-          stopCamera();
-        });
+        if (!username || !userid) {
+          showResult(
+            "addUserResult",
+            "Please enter both name and user ID first.",
+            "error"
+          );
+          return;
+        }
 
-      // Add User Camera Functions
-      document
-        .getElementById("startAddUserCameraBtn")
-        .addEventListener("click", async function () {
-          const username = document.getElementById("newusername").value;
-          const userid = document.getElementById("newuserid").value;
+        try {
+          console.log('Requesting add user camera access...');
+          addUserStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 300, height: 225 },
+          });
+          const video = document.getElementById("addUserCameraFeed");
+          video.srcObject = addUserStream;
 
-          if (!username || !userid) {
-            showResult(
-              "addUserResult",
-              "Please enter both name and user ID first.",
-              "error"
-            );
-            return;
-          }
+          document.getElementById("addUserCameraContainer").style.display =
+            "block";
+          document.getElementById("startAddUserCameraBtn").style.display = "none";
 
-          try {
-            addUserStream = await navigator.mediaDevices.getUserMedia({
-              video: { width: 300, height: 225 },
-            });
-            const video = document.getElementById("addUserCameraFeed");
-            video.srcObject = addUserStream;
+          capturedPhotos = [];
+          photoCount = 0;
+          updatePhotoCount();
 
-            document.getElementById("addUserCameraContainer").style.display =
-              "block";
-            this.style.display = "none";
+          showResult(
+            "addUserResult",
+            "Camera started! Capture 10 photos from different angles.",
+            "success"
+          );
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          showResult(
+            "addUserResult",
+            "Error accessing camera. Please ensure you have granted camera permissions.",
+            "error"
+          );
+        }
+      }
 
-            capturedPhotos = [];
-            photoCount = 0;
-            updatePhotoCount();
+      function setupOtherEventListeners() {
+        const captureBtn = document.getElementById("captureBtn");
+        if (captureBtn) {
+          captureBtn.addEventListener("click", function () {
+            captureAndProcessImage("attendance");
+          });
+        }
 
-            showResult(
-              "addUserResult",
-              "Camera started! Capture 10 photos from different angles.",
-              "success"
-            );
-          } catch (error) {
-            console.error("Error accessing camera:", error);
-            showResult(
-              "addUserResult",
-              "Error accessing camera. Please ensure you have granted camera permissions.",
-              "error"
-            );
-          }
-        });
+        const stopCameraBtn = document.getElementById("stopCameraBtn");
+        if (stopCameraBtn) {
+          stopCameraBtn.addEventListener("click", function () {
+            stopCamera();
+          });
+        }
 
-      document
-        .getElementById("captureUserPhotoBtn")
-        .addEventListener("click", function () {
-          if (photoCount < 10) {
-            captureUserPhoto();
-          }
-        });
+        const captureUserPhotoBtn = document.getElementById("captureUserPhotoBtn");
+        if (captureUserPhotoBtn) {
+          captureUserPhotoBtn.addEventListener("click", function () {
+            if (photoCount < 10) {
+              captureUserPhoto();
+            }
+          });
+        }
 
-      document
-        .getElementById("stopAddUserCameraBtn")
-        .addEventListener("click", function () {
-          stopAddUserCamera();
-        });
+        const stopAddUserCameraBtn = document.getElementById("stopAddUserCameraBtn");
+        if (stopAddUserCameraBtn) {
+          stopAddUserCameraBtn.addEventListener("click", function () {
+            stopAddUserCamera();
+          });
+        }
 
-      document
-        .getElementById("submitNewUserBtn")
-        .addEventListener("click", function () {
-          submitNewUser();
-        });
+        const submitNewUserBtn = document.getElementById("submitNewUserBtn");
+        if (submitNewUserBtn) {
+          submitNewUserBtn.addEventListener("click", function () {
+            submitNewUser();
+          });
+        }
+      }
 
       function captureAndProcessImage(type) {
         const video = document.getElementById("cameraFeed");
