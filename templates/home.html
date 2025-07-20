@@ -231,10 +231,6 @@
                 required
                 autocomplete="name"
               />
-              <div class="form-feedback invalid">
-                <i class="fas fa-exclamation-circle"></i>
-                Please enter a valid name
-              </div>
             </div>
 
             <div class="form-group-modern">
@@ -250,10 +246,6 @@
                 required
                 min="1"
               />
-              <div class="form-feedback invalid">
-                <i class="fas fa-exclamation-circle"></i>
-                Please enter a valid ID number
-              </div>
             </div>
 
             <!-- Camera for Adding User -->
@@ -392,16 +384,21 @@
       );
     });
 
-    // Real-time validation feedback
+    // Real-time validation feedback - but don't interfere with camera functionality
     document.querySelectorAll(".form-input-modern").forEach((input) => {
       input.addEventListener("input", function () {
-        if (this.checkValidity()) {
-          this.classList.remove("is-invalid");
-          this.classList.add("is-valid");
-        } else {
-          this.classList.remove("is-valid");
-          this.classList.add("is-invalid");
-        }
+        // Remove validation classes to prevent interference
+        this.classList.remove("is-invalid", "is-valid");
+        
+        // Only show validation on blur, not on input
+        this.addEventListener("blur", function() {
+          if (this.value.trim() === "") {
+            this.classList.add("is-invalid");
+          } else {
+            this.classList.remove("is-invalid");
+            this.classList.add("is-valid");
+          }
+        });
       });
     });
 
@@ -842,36 +839,38 @@
       let photoCount = 0;
 
       // Wait for DOM to be fully loaded
-      document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM loaded, setting up event listeners');
-        
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM loaded, setting up event listeners");
+
         // Check if elements exist
         const startCameraBtn = document.getElementById("startCameraBtn");
-        const startAddUserCameraBtn = document.getElementById("startAddUserCameraBtn");
-        
-        console.log('startCameraBtn found:', startCameraBtn);
-        console.log('startAddUserCameraBtn found:', startAddUserCameraBtn);
-        
+        const startAddUserCameraBtn = document.getElementById(
+          "startAddUserCameraBtn"
+        );
+
+        console.log("startCameraBtn found:", startCameraBtn);
+        console.log("startAddUserCameraBtn found:", startAddUserCameraBtn);
+
         if (startCameraBtn) {
-          console.log('Adding click listener to startCameraBtn');
+          console.log("Adding click listener to startCameraBtn");
           startCameraBtn.addEventListener("click", async function () {
-            console.log('Start camera button clicked!');
+            console.log("Start camera button clicked!");
             await startCameraFunction();
           });
         } else {
-          console.error('startCameraBtn not found!');
+          console.error("startCameraBtn not found!");
         }
-        
+
         if (startAddUserCameraBtn) {
-          console.log('Adding click listener to startAddUserCameraBtn');
+          console.log("Adding click listener to startAddUserCameraBtn");
           startAddUserCameraBtn.addEventListener("click", async function () {
-            console.log('Start add user camera button clicked!');
+            console.log("Start add user camera button clicked!");
             await startAddUserCameraFunction();
           });
         } else {
-          console.error('startAddUserCameraBtn not found!');
+          console.error("startAddUserCameraBtn not found!");
         }
-        
+
         // Add other event listeners
         setupOtherEventListeners();
       });
@@ -879,7 +878,7 @@
       // Face Recognition Camera Functions
       async function startCameraFunction() {
         try {
-          console.log('Requesting camera access...');
+          console.log("Requesting camera access...");
           currentStream = await navigator.mediaDevices.getUserMedia({
             video: { width: 400, height: 300 },
           });
@@ -905,20 +904,31 @@
       }
 
       async function startAddUserCameraFunction() {
-        const username = document.getElementById("newusername").value;
-        const userid = document.getElementById("newuserid").value;
+        const username = document.getElementById("newusername").value.trim();
+        const userid = document.getElementById("newuserid").value.trim();
 
-        if (!username || !userid) {
+        console.log('Username:', username, 'UserID:', userid);
+
+        if (!username || username.length < 2) {
           showResult(
             "addUserResult",
-            "Please enter both name and user ID first.",
+            "Please enter a valid name (at least 2 characters).",
+            "error"
+          );
+          return;
+        }
+
+        if (!userid || isNaN(userid) || userid <= 0) {
+          showResult(
+            "addUserResult",
+            "Please enter a valid user ID (positive number).",
             "error"
           );
           return;
         }
 
         try {
-          console.log('Requesting add user camera access...');
+          console.log("Requesting add user camera access...");
           addUserStream = await navigator.mediaDevices.getUserMedia({
             video: { width: 300, height: 225 },
           });
@@ -927,7 +937,8 @@
 
           document.getElementById("addUserCameraContainer").style.display =
             "block";
-          document.getElementById("startAddUserCameraBtn").style.display = "none";
+          document.getElementById("startAddUserCameraBtn").style.display =
+            "none";
 
           capturedPhotos = [];
           photoCount = 0;
@@ -963,7 +974,9 @@
           });
         }
 
-        const captureUserPhotoBtn = document.getElementById("captureUserPhotoBtn");
+        const captureUserPhotoBtn = document.getElementById(
+          "captureUserPhotoBtn"
+        );
         if (captureUserPhotoBtn) {
           captureUserPhotoBtn.addEventListener("click", function () {
             if (photoCount < 10) {
@@ -972,7 +985,9 @@
           });
         }
 
-        const stopAddUserCameraBtn = document.getElementById("stopAddUserCameraBtn");
+        const stopAddUserCameraBtn = document.getElementById(
+          "stopAddUserCameraBtn"
+        );
         if (stopAddUserCameraBtn) {
           stopAddUserCameraBtn.addEventListener("click", function () {
             stopAddUserCamera();
