@@ -1,5 +1,7 @@
 import cv2
 import os
+import io
+import shutil
 from flask import Flask, request, render_template, send_file, make_response, jsonify
 from datetime import date
 from datetime import datetime
@@ -7,6 +9,7 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
 import joblib
+from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -668,9 +671,6 @@ def process_attendance():
         image_file = request.files['image']
         
         # Convert uploaded image to OpenCV format
-        import io
-        from PIL import Image
-        
         # Read image data
         image_bytes = io.BytesIO(image_file.read())
         pil_image = Image.open(image_bytes)
@@ -739,9 +739,6 @@ def add_user_web():
                     photo_path = os.path.join(userimagefolder, f'{username}_{photo_count}.jpg')
                     
                     # Convert and save the image
-                    import io
-                    from PIL import Image
-                    
                     image_bytes = io.BytesIO(photo_file.read())
                     pil_image = Image.open(image_bytes)
                     

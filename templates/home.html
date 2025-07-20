@@ -389,9 +389,9 @@
       input.addEventListener("input", function () {
         // Remove validation classes to prevent interference
         this.classList.remove("is-invalid", "is-valid");
-        
+
         // Only show validation on blur, not on input
-        this.addEventListener("blur", function() {
+        this.addEventListener("blur", function () {
           if (this.value.trim() === "") {
             this.classList.add("is-invalid");
           } else {
@@ -907,7 +907,7 @@
         const username = document.getElementById("newusername").value.trim();
         const userid = document.getElementById("newuserid").value.trim();
 
-        console.log('Username:', username, 'UserID:', userid);
+        console.log("Username:", username, "UserID:", userid);
 
         if (!username || username.length < 2) {
           showResult(
