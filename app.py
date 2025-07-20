@@ -551,24 +551,45 @@ def start():
     if 'face_recognition_model.pkl' not in os.listdir('static'):
         return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess='There is no trained model in the static folder. Please add a new face to continue.')
 
-    ret = True
-    cap = cv2.VideoCapture(0)
-    while ret:
-        ret, frame = cap.read()
-        if len(extract_faces(frame)) > 0:
-            (x, y, w, h) = extract_faces(frame)[0]
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (86, 32, 251), 1)
-            cv2.rectangle(frame, (x, y), (x+w, y-40), (86, 32, 251), -1)
-            face = cv2.resize(frame[y:y+h, x:x+w], (50, 50))
-            identified_person = identify_face(face.reshape(1, -1))[0]
-            add_attendance(identified_person)
-            cv2.putText(frame, f'{identified_person}', (x+5, y-5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.imshow('Attendance', frame)
-        if cv2.waitKey(1) == 27:
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+    # Check if running in a server environment (no camera access)
+    try:
+        import os
+        if os.environ.get('PORT'):  # Running on cloud platform
+            return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess='Camera functionality is not available in web deployment. Please use the local version for face recognition features.')
+    except:
+        pass
+
+    try:
+        ret = True
+        cap = cv2.VideoCapture(0)
+        
+        # Check if camera is available
+        if not cap.isOpened():
+            cap.release()
+            return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess='Camera not accessible. Please ensure camera permissions are granted and try the local version.')
+            
+        while ret:
+            ret, frame = cap.read()
+            if frame is None or frame.size == 0:
+                break
+                
+            if len(extract_faces(frame)) > 0:
+                (x, y, w, h) = extract_faces(frame)[0]
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (86, 32, 251), 1)
+                cv2.rectangle(frame, (x, y), (x+w, y-40), (86, 32, 251), -1)
+                face = cv2.resize(frame[y:y+h, x:x+w], (50, 50))
+                identified_person = identify_face(face.reshape(1, -1))[0]
+                add_attendance(identified_person)
+                cv2.putText(frame, f'{identified_person}', (x+5, y-5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            cv2.imshow('Attendance', frame)
+            if cv2.waitKey(1) == 27:
+                break
+        cap.release()
+        cv2.destroyAllWindows()
+    except Exception as e:
+        return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess=f'Camera error: {str(e)}. Camera functionality requires local desktop environment.')
+        
     names, rolls, times, l = extract_attendance()
     return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2)
 
@@ -579,32 +600,57 @@ def start():
 def add():
     newusername = request.form['newusername']
     newuserid = request.form['newuserid']
-    userimagefolder = 'static/faces/'+newusername+'_'+str(newuserid)
-    if not os.path.isdir(userimagefolder):
-        os.makedirs(userimagefolder)
-    i, j = 0, 0
-    cap = cv2.VideoCapture(0)
-    while 1:
-        _, frame = cap.read()
-        faces = extract_faces(frame)
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 20), 2)
-            cv2.putText(frame, f'Images Captured: {i}/{nimgs}', (30, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2, cv2.LINE_AA)
-            if j % 5 == 0:
-                name = newusername+'_'+str(i)+'.jpg'
-                cv2.imwrite(userimagefolder+'/'+name, frame[y:y+h, x:x+w])
-                i += 1
-            j += 1
-        if j == nimgs*5:
-            break
-        cv2.imshow('Adding new User', frame)
-        if cv2.waitKey(1) == 27:
-            break
-    cap.release()
-    cv2.destroyAllWindows()
-    print('Training Model')
-    train_model()
+    
+    # Check if running in a server environment (no camera access)
+    try:
+        import os
+        if os.environ.get('PORT'):  # Running on cloud platform
+            names, rolls, times, l = extract_attendance()
+            return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess='Add User functionality is not available in web deployment. Camera access is required. Please use the local version for adding new users.')
+    except:
+        pass
+    
+    try:
+        userimagefolder = 'static/faces/'+newusername+'_'+str(newuserid)
+        if not os.path.isdir(userimagefolder):
+            os.makedirs(userimagefolder)
+        i, j = 0, 0
+        cap = cv2.VideoCapture(0)
+        
+        # Check if camera is available
+        if not cap.isOpened():
+            cap.release()
+            names, rolls, times, l = extract_attendance()
+            return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess='Camera not accessible. Please ensure camera permissions are granted and try the local version.')
+            
+        while 1:
+            ret, frame = cap.read()
+            if not ret or frame is None or frame.size == 0:
+                break
+                
+            faces = extract_faces(frame)
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 20), 2)
+                cv2.putText(frame, f'Images Captured: {i}/{nimgs}', (30, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2, cv2.LINE_AA)
+                if j % 5 == 0:
+                    name = newusername+'_'+str(i)+'.jpg'
+                    cv2.imwrite(userimagefolder+'/'+name, frame[y:y+h, x:x+w])
+                    i += 1
+                j += 1
+            if j == nimgs*5:
+                break
+            cv2.imshow('Adding new User', frame)
+            if cv2.waitKey(1) == 27:
+                break
+        cap.release()
+        cv2.destroyAllWindows()
+        print('Training Model')
+        train_model()
+    except Exception as e:
+        names, rolls, times, l = extract_attendance()
+        return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess=f'Camera error: {str(e)}. Add User functionality requires local desktop environment.')
+        
     names, rolls, times, l = extract_attendance()
     return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2)
 
