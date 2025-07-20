@@ -111,12 +111,38 @@
           </div>
         </div>
         <div class="card-body-modern">
-          <!-- Take Attendance Button -->
-          <a href="/start" class="cta-button-modern">
-            <i class="fas fa-camera button-icon"></i>
-            <span>Start Face Recognition</span>
-            <i class="fas fa-arrow-right button-icon"></i>
-          </a>
+          <!-- Web-based Face Recognition -->
+          <div class="camera-section mb-4">
+            <button id="startCameraBtn" class="cta-button-modern">
+              <i class="fas fa-camera button-icon"></i>
+              <span>Start Web Camera</span>
+              <i class="fas fa-arrow-right button-icon"></i>
+            </button>
+
+            <!-- Camera Feed Container -->
+            <div
+              id="cameraContainer"
+              class="camera-container mt-3"
+              style="display: none"
+            >
+              <video id="cameraFeed" width="400" height="300" autoplay></video>
+              <canvas
+                id="captureCanvas"
+                width="400"
+                height="300"
+                style="display: none"
+              ></canvas>
+              <div class="camera-controls mt-3">
+                <button id="captureBtn" class="btn btn-success me-2">
+                  <i class="fas fa-camera me-1"></i>Take Attendance
+                </button>
+                <button id="stopCameraBtn" class="btn btn-secondary">
+                  <i class="fas fa-stop me-1"></i>Stop Camera
+                </button>
+              </div>
+              <div id="attendanceResult" class="mt-3"></div>
+            </div>
+          </div>
 
           <!-- Attendance Table -->
           {% if l > 0 %}
@@ -190,13 +216,8 @@
           <i class="fas fa-users-cog card-icon-modern"></i>
         </div>
         <div class="card-body-modern">
-          <form
-            action="/add"
-            method="POST"
-            enctype="multipart/form-data"
-            class="form-modern needs-validation"
-            novalidate
-          >
+          <!-- Web-based Add User -->
+          <div class="add-user-section">
             <div class="form-group-modern">
               <label for="newusername" class="form-label-modern">
                 <i class="fas fa-user me-2"></i>Full Name *
@@ -235,11 +256,54 @@
               </div>
             </div>
 
-            <button type="submit" class="cta-button-modern success">
-              <i class="fas fa-camera button-icon"></i>
-              <span>Capture Face & Add</span>
-            </button>
-          </form>
+            <!-- Camera for Adding User -->
+            <div class="camera-section mb-3">
+              <button id="startAddUserCameraBtn" class="btn btn-primary mb-3">
+                <i class="fas fa-camera me-1"></i>Start Camera for User Photos
+              </button>
+
+              <div
+                id="addUserCameraContainer"
+                class="camera-container"
+                style="display: none"
+              >
+                <video
+                  id="addUserCameraFeed"
+                  width="300"
+                  height="225"
+                  autoplay
+                ></video>
+                <canvas
+                  id="addUserCaptureCanvas"
+                  width="300"
+                  height="225"
+                  style="display: none"
+                ></canvas>
+                <div class="camera-controls mt-3">
+                  <button id="captureUserPhotoBtn" class="btn btn-success me-2">
+                    <i class="fas fa-camera me-1"></i>Capture Photo (<span
+                      id="photoCount"
+                      >0</span
+                    >/10)
+                  </button>
+                  <button
+                    id="stopAddUserCameraBtn"
+                    class="btn btn-secondary me-2"
+                  >
+                    <i class="fas fa-stop me-1"></i>Stop Camera
+                  </button>
+                  <button
+                    id="submitNewUserBtn"
+                    class="btn btn-primary"
+                    style="display: none"
+                  >
+                    <i class="fas fa-user-plus me-1"></i>Add User
+                  </button>
+                </div>
+                <div id="addUserResult" class="mt-3"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -711,5 +775,364 @@
         </form>
       </div>
     </div>
+    <!-- Camera Styles -->
+    <style>
+      .camera-container {
+        border: 2px solid #e3e6f0;
+        border-radius: 10px;
+        padding: 20px;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .camera-container video {
+        border-radius: 8px;
+        border: 2px solid #ddd;
+        display: block;
+        margin: 0 auto;
+      }
+
+      .camera-controls {
+        text-align: center;
+      }
+
+      .capture-result {
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+      }
+
+      .capture-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .capture-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+
+    <!-- Camera JavaScript -->
+    <script>
+      let currentStream = null;
+      let addUserStream = null;
+      let capturedPhotos = [];
+      let photoCount = 0;
+
+      // Face Recognition Camera Functions
+      document
+        .getElementById("startCameraBtn")
+        .addEventListener("click", async function () {
+          try {
+            currentStream = await navigator.mediaDevices.getUserMedia({
+              video: { width: 400, height: 300 },
+            });
+            const video = document.getElementById("cameraFeed");
+            video.srcObject = currentStream;
+
+            document.getElementById("cameraContainer").style.display = "block";
+            this.style.display = "none";
+
+            showResult(
+              "attendanceResult",
+              'Camera started! Position your face in the frame and click "Take Attendance".',
+              "success"
+            );
+          } catch (error) {
+            console.error("Error accessing camera:", error);
+            showResult(
+              "attendanceResult",
+              "Error accessing camera. Please ensure you have granted camera permissions and are using HTTPS.",
+              "error"
+            );
+          }
+        });
+
+      document
+        .getElementById("captureBtn")
+        .addEventListener("click", function () {
+          captureAndProcessImage("attendance");
+        });
+
+      document
+        .getElementById("stopCameraBtn")
+        .addEventListener("click", function () {
+          stopCamera();
+        });
+
+      // Add User Camera Functions
+      document
+        .getElementById("startAddUserCameraBtn")
+        .addEventListener("click", async function () {
+          const username = document.getElementById("newusername").value;
+          const userid = document.getElementById("newuserid").value;
+
+          if (!username || !userid) {
+            showResult(
+              "addUserResult",
+              "Please enter both name and user ID first.",
+              "error"
+            );
+            return;
+          }
+
+          try {
+            addUserStream = await navigator.mediaDevices.getUserMedia({
+              video: { width: 300, height: 225 },
+            });
+            const video = document.getElementById("addUserCameraFeed");
+            video.srcObject = addUserStream;
+
+            document.getElementById("addUserCameraContainer").style.display =
+              "block";
+            this.style.display = "none";
+
+            capturedPhotos = [];
+            photoCount = 0;
+            updatePhotoCount();
+
+            showResult(
+              "addUserResult",
+              "Camera started! Capture 10 photos from different angles.",
+              "success"
+            );
+          } catch (error) {
+            console.error("Error accessing camera:", error);
+            showResult(
+              "addUserResult",
+              "Error accessing camera. Please ensure you have granted camera permissions.",
+              "error"
+            );
+          }
+        });
+
+      document
+        .getElementById("captureUserPhotoBtn")
+        .addEventListener("click", function () {
+          if (photoCount < 10) {
+            captureUserPhoto();
+          }
+        });
+
+      document
+        .getElementById("stopAddUserCameraBtn")
+        .addEventListener("click", function () {
+          stopAddUserCamera();
+        });
+
+      document
+        .getElementById("submitNewUserBtn")
+        .addEventListener("click", function () {
+          submitNewUser();
+        });
+
+      function captureAndProcessImage(type) {
+        const video = document.getElementById("cameraFeed");
+        const canvas = document.getElementById("captureCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Draw current video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert to blob and send to server
+        canvas.toBlob(
+          async function (blob) {
+            const formData = new FormData();
+            formData.append("image", blob, "capture.jpg");
+
+            showResult(
+              "attendanceResult",
+              '<div class="loading-spinner"></div> Processing face recognition...',
+              "info"
+            );
+
+            try {
+              const response = await fetch("/process-attendance", {
+                method: "POST",
+                body: formData,
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                showResult(
+                  "attendanceResult",
+                  `✅ ${result.message}`,
+                  "success"
+                );
+                // Refresh attendance table
+                setTimeout(() => {
+                  location.reload();
+                }, 2000);
+              } else {
+                showResult("attendanceResult", `❌ ${result.message}`, "error");
+              }
+            } catch (error) {
+              console.error("Error processing image:", error);
+              showResult(
+                "attendanceResult",
+                "❌ Error processing image. Please try again.",
+                "error"
+              );
+            }
+          },
+          "image/jpeg",
+          0.8
+        );
+      }
+
+      function captureUserPhoto() {
+        const video = document.getElementById("addUserCameraFeed");
+        const canvas = document.getElementById("addUserCaptureCanvas");
+        const ctx = canvas.getContext("2d");
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(
+          function (blob) {
+            capturedPhotos.push(blob);
+            photoCount++;
+            updatePhotoCount();
+
+            if (photoCount >= 10) {
+              document.getElementById("captureUserPhotoBtn").style.display =
+                "none";
+              document.getElementById("submitNewUserBtn").style.display =
+                "inline-block";
+              showResult(
+                "addUserResult",
+                '✅ All 10 photos captured! Click "Add User" to save.',
+                "success"
+              );
+            } else {
+              showResult(
+                "addUserResult",
+                `Photo ${photoCount}/10 captured. Take more photos from different angles.`,
+                "success"
+              );
+            }
+          },
+          "image/jpeg",
+          0.8
+        );
+      }
+
+      function updatePhotoCount() {
+        document.getElementById("photoCount").textContent = photoCount;
+      }
+
+      async function submitNewUser() {
+        const username = document.getElementById("newusername").value;
+        const userid = document.getElementById("newuserid").value;
+
+        const formData = new FormData();
+        formData.append("username", username);
+        formData.append("userid", userid);
+
+        capturedPhotos.forEach((photo, index) => {
+          formData.append(`photo_${index}`, photo, `${username}_${index}.jpg`);
+        });
+
+        showResult(
+          "addUserResult",
+          '<div class="loading-spinner"></div> Adding user and training model...',
+          "info"
+        );
+
+        try {
+          const response = await fetch("/add-user-web", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showResult("addUserResult", `✅ ${result.message}`, "success");
+            stopAddUserCamera();
+            // Reset form
+            document.getElementById("newusername").value = "";
+            document.getElementById("newuserid").value = "";
+            // Refresh page
+            setTimeout(() => {
+              location.reload();
+            }, 2000);
+          } else {
+            showResult("addUserResult", `❌ ${result.message}`, "error");
+          }
+        } catch (error) {
+          console.error("Error adding user:", error);
+          showResult(
+            "addUserResult",
+            "❌ Error adding user. Please try again.",
+            "error"
+          );
+        }
+      }
+
+      function stopCamera() {
+        if (currentStream) {
+          currentStream.getTracks().forEach((track) => track.stop());
+          currentStream = null;
+        }
+        document.getElementById("cameraContainer").style.display = "none";
+        document.getElementById("startCameraBtn").style.display = "block";
+        document.getElementById("attendanceResult").innerHTML = "";
+      }
+
+      function stopAddUserCamera() {
+        if (addUserStream) {
+          addUserStream.getTracks().forEach((track) => track.stop());
+          addUserStream = null;
+        }
+        document.getElementById("addUserCameraContainer").style.display =
+          "none";
+        document.getElementById("startAddUserCameraBtn").style.display =
+          "block";
+        document.getElementById("captureUserPhotoBtn").style.display =
+          "inline-block";
+        document.getElementById("submitNewUserBtn").style.display = "none";
+        document.getElementById("addUserResult").innerHTML = "";
+        capturedPhotos = [];
+        photoCount = 0;
+        updatePhotoCount();
+      }
+
+      function showResult(elementId, message, type) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<div class="capture-result capture-${type}">${message}</div>`;
+      }
+
+      // Check if HTTPS is being used
+      if (location.protocol !== "https:" && location.hostname !== "localhost") {
+        showResult(
+          "attendanceResult",
+          "⚠️ Camera access requires HTTPS. This feature may not work on HTTP.",
+          "error"
+        );
+      }
+    </script>
   </body>
 </html>

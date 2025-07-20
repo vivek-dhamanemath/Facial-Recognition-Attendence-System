@@ -1,6 +1,6 @@
 import cv2
 import os
-from flask import Flask, request, render_template, send_file, make_response
+from flask import Flask, request, render_template, send_file, make_response, jsonify
 from datetime import date
 from datetime import datetime
 import numpy as np
@@ -653,6 +653,134 @@ def add():
         
     names, rolls, times, l = extract_attendance()
     return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2)
+
+
+# Web-based Face Recognition - Process captured image
+@app.route('/process-attendance', methods=['POST'])
+def process_attendance():
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'message': 'No image received'})
+        
+        if 'face_recognition_model.pkl' not in os.listdir('static'):
+            return jsonify({'success': False, 'message': 'No trained model found. Please add users first.'})
+        
+        image_file = request.files['image']
+        
+        # Convert uploaded image to OpenCV format
+        import io
+        from PIL import Image
+        
+        # Read image data
+        image_bytes = io.BytesIO(image_file.read())
+        pil_image = Image.open(image_bytes)
+        
+        # Convert PIL to OpenCV format
+        open_cv_image = np.array(pil_image)
+        if len(open_cv_image.shape) == 3:
+            open_cv_image = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
+        
+        # Extract faces from image
+        faces = extract_faces(open_cv_image)
+        
+        if len(faces) == 0:
+            return jsonify({'success': False, 'message': 'No face detected in the image. Please try again.'})
+        
+        # Process the first detected face
+        (x, y, w, h) = faces[0]
+        face_roi = open_cv_image[y:y+h, x:x+w]
+        face_resized = cv2.resize(face_roi, (50, 50))
+        
+        # Identify the face
+        identified_person = identify_face(face_resized.reshape(1, -1))[0]
+        
+        # Add attendance
+        add_attendance(identified_person)
+        
+        # Extract username from identified_person (format: username_userid)
+        username = identified_person.split('_')[0]
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Attendance marked successfully for {username}!'
+        })
+        
+    except Exception as e:
+        print(f"Error in process_attendance: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error processing image: {str(e)}'})
+
+
+# Web-based Add User - Process multiple captured photos
+@app.route('/add-user-web', methods=['POST'])
+def add_user_web():
+    try:
+        username = request.form.get('username')
+        userid = request.form.get('userid')
+        
+        if not username or not userid:
+            return jsonify({'success': False, 'message': 'Username and User ID are required'})
+        
+        # Create user folder
+        userimagefolder = f'static/faces/{username}_{userid}'
+        if not os.path.isdir(userimagefolder):
+            os.makedirs(userimagefolder)
+        else:
+            return jsonify({'success': False, 'message': 'User already exists with this ID'})
+        
+        # Save uploaded photos
+        photo_count = 0
+        for key in request.files:
+            if key.startswith('photo_'):
+                photo_file = request.files[key]
+                if photo_file:
+                    # Save photo
+                    photo_path = os.path.join(userimagefolder, f'{username}_{photo_count}.jpg')
+                    
+                    # Convert and save the image
+                    import io
+                    from PIL import Image
+                    
+                    image_bytes = io.BytesIO(photo_file.read())
+                    pil_image = Image.open(image_bytes)
+                    
+                    # Convert to OpenCV format and extract face
+                    open_cv_image = np.array(pil_image)
+                    if len(open_cv_image.shape) == 3:
+                        open_cv_image = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
+                    
+                    # Extract and save face region
+                    faces = extract_faces(open_cv_image)
+                    if len(faces) > 0:
+                        (x, y, w, h) = faces[0]
+                        face_roi = open_cv_image[y:y+h, x:x+w]
+                        cv2.imwrite(photo_path, face_roi)
+                        photo_count += 1
+        
+        if photo_count < 5:
+            # Remove folder if not enough photos
+            import shutil
+            shutil.rmtree(userimagefolder)
+            return jsonify({'success': False, 'message': f'Only {photo_count} valid face photos captured. Need at least 5.'})
+        
+        # Train the model
+        try:
+            train_model()
+        except Exception as e:
+            print(f"Error training model: {str(e)}")
+            return jsonify({'success': False, 'message': 'Error training model. Please try again.'})
+        
+        return jsonify({
+            'success': True, 
+            'message': f'User {username} added successfully with {photo_count} photos!'
+        })
+        
+    except Exception as e:
+        print(f"Error in add_user_web: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error adding user: {str(e)}'})
 
 
 # Our main function which runs the Flask App
